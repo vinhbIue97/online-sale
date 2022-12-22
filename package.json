@@ -10,9 +10,11 @@
     "test": "jest"
   },
   "dependencies": {
+    "@fortawesome/vue-fontawesome": "^2.0.9",
     "bootstrap": "^4.6.2",
     "bootstrap-vue": "^2.22.0",
     "core-js": "^3.25.3",
+    "fontawesome-4.7": "^4.7.0",
     "node-sass": "^4.14.1",
     "nuxt": "^2.15.8",
     "vue": "^2.7.10",
