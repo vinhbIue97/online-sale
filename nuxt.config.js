@@ -39,6 +39,11 @@ export default {
     'bootstrap-vue/nuxt',
   ],
 
+  extend(config, {isClient}) {
+    const alias = config.resolve.alias = config.resolve.alias || {};
+    alias['~image'] = path.join(this.options.rootDir, '/static/images');
+  },
+
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
     postcss: null,
