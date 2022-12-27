@@ -32,7 +32,8 @@ export default {
     // https://go.nuxtjs.dev/typescript
     '@nuxt/typescript-build',
     // import module fontawesome
-    '@nuxtjs/fontawesome'
+    '@nuxtjs/fontawesome',
+    'vue-ssr-carousel/nuxt',
   ],
   fontawesome: {
     icons:{

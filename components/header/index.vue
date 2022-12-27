@@ -1,12 +1,13 @@
 <template>
-  <div class="header-section">
-    <div class="header-section__logo">
+  <div class="header-section" :class="{header_fixed: this.isFixedHeader}">
+    <a href="/home" class="header-section__logo">
       <img src="../../static/images/header/logo.png" alt="logo"/>
-      LOGO
-    </div>
+    </a>
     <div class="header-section__search">
       <div class="input-group">
         <input type="text" class="form-control search-input" aria-label="Text input with dropdown button"
+               v-model="searchValue"
+               @input="handleSearch"
                placeholder="Search...">
         <div class="input-group-append">
           <button class="dropdown-toggle dropdown-custom" type="button" data-toggle="dropdown-menu"
@@ -24,18 +25,45 @@
     </div>
     <div class="header-section__option">
       <div class="option_item contact">
-        <i class="fa fa-phone contact__logo" aria-hidden="true"></i>
+        <div class="contact__logo">
+          <font-awesome-icon :icon="['fas', 'phone']"/>
+        </div>
         <div class="contact__info">
           <span>+84 70360 9971</span>
         </div>
       </div>
-      <div class="option_item account">Account</div>
+      <div class="option_item account">
+        <font-awesome-icon :icon="['fas', 'user']"/>
+      </div>
       <div class="option_item cart">
         <div class="cart__logo" @click="handleShowCart()">
-          Cart
+          <font-awesome-icon :icon="['fa-solid', 'cart-shopping']"/>
         </div>
-        <div ref="cartSection" class="cart__section">
-          <span class="close-btn" @click="handleCloseCart()">Close</span>
+        <div class="cart__section" :class="{active: enableCart}">
+          <span class="close-btn" @click="handleCloseCart()">
+            <font-awesome-icon class="minus-action" :icon="['fa-solid', 'xmark']"/>
+          </span>
+          <div v-for="(item, index) in cartList" class="cart-item">
+            <img :src="item.imgSrc" alt=""/>
+            <div class="item-info">
+              <div class="item-name"> {{ item.name }}</div>
+              <div class="item-quantity">
+                <font-awesome-icon class="minus-action" :icon="['fa-regular', 'square-minus']"
+                                   @click="handleReduceItemQuantity(item)"/>
+                <input :value="item.quantity ? item.quantity : 0"
+                       class="form-control"
+                       type="text"
+                       data-toggle="tooltip"
+                       data-placement="top"
+                       :title="item.quantity"
+                       @input="handleInputQuantity(item, $event)"
+                />
+                <font-awesome-icon class="plus-action" :icon="['fa-regular', 'square-plus']"
+                                   @click="handleIncreaseItemQuantity(item)"/>
+              </div>
+              <div class="item-price"> Total: {{ item.totalPrice }} </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -43,18 +71,57 @@
 </template>
 
 <script>
+
 export default {
-  name: "index",
+  props: {
+    cartList: {
+      style: Array,
+      default: () => []
+    },
+  },
+  mounted() {
+    window.addEventListener( 'scroll', ( event ) => {
+      if (document.documentElement.scrollTop >= 50) {
+        this.isFixedHeader = true;
+      } else {
+        this.isFixedHeader = false;
+      }
+    } )
+  },
   methods: {
     handleShowCart() {
-      this.$refs.cartSection.classList.remove( "close-cart" );
-      this.$refs.cartSection.classList.add( "active" );
+      this.enableCart = true;
+      this.$emit('showCart', this.enableCart)
     },
     handleCloseCart() {
-      this.$refs.cartSection.classList.remove( "active" );
-      this.$refs.cartSection.classList.add( "close-cart" );
+      this.enableCart = false;
+      this.$emit('showCart', this.enableCart)
+    },
+    handleSearch() {
+      this.$emit( 'inputSearch', this.searchValue )
+    },
+    handleReduceItemQuantity( item ) {
+      item.quantity = item.quantity > 0 ? --item.quantity : 0;
+      item.totalPrice = parseFloat(item.price) * item.quantity;
+    },
+    handleIncreaseItemQuantity( item ) {
+      item.quantity++;
+      item.totalPrice = parseFloat(item.price) * item.quantity;
+    },
+    handleInputQuantity( item, event ) {
+      item.quantity = event.target.value ? event.target.value : 0;
+      item.totalPrice = parseFloat(item.price) * item.quantity;
+      console.log( item.quantity )
     }
   },
+  data() {
+    return {
+      searchValue: '',
+      enableCart: false,
+      isFixedHeader: false,
+    }
+  },
+  name: "index"
 }
 </script>
 
@@ -67,8 +134,20 @@ export default {
   padding: 6px 0;
   background: #0099FF;
 
+  &.header_fixed {
+    position: fixed;
+    z-index: 3;
+  }
+
   &__logo {
     flex: 1;
+    padding-left: 4px;
+
+    img {
+      width: 154px;
+      height: 48px;
+      object-fit: contain;
+    }
   }
 
   &__search {
@@ -124,11 +203,13 @@ export default {
         flex-direction: column;
         justify-content: center;
         flex: 1;
-        padding-left: 4px;
 
-        img {
-          width: 154px;
-          height: 48px;
+        svg {
+          font-size: 24px;
+
+          path {
+            fill: #FFFFFF;
+          }
         }
       }
 
@@ -137,9 +218,20 @@ export default {
         flex-direction: column;
         justify-content: center;
         flex: 2;
+
         span {
           font-weight: 700;
           font-size: 15px;
+        }
+      }
+    }
+
+    .account {
+      svg {
+        font-size: 24px;
+
+        path {
+          fill: #FFFFFF;
         }
       }
     }
@@ -152,6 +244,12 @@ export default {
         height: 100%;
         width: 300px;
         background: #FFFFFF;
+        transform: translate(300px, 0);
+        transition-duration: 0.7s;
+        transition-timing-function: linear;
+        opacity: 0;
+        z-index: 4;
+        overflow: scroll;
 
         &.active {
           right: 0;
@@ -159,19 +257,71 @@ export default {
           transition-duration: 0.5s;
           transition-timing-function: linear;
           opacity: 1;
+          z-index: 4;
+          background: rgba(252, 247, 247, 1);
         }
 
-        &.close-cart {
-          right: -300px;
-          transform: translate(300px, 0);
-          transition-duration: 0.7s;
-          transition-timing-function: linear;
-          opacity: 0;
+
+        .close-btn {
+          margin-left: 4px;
+          font-size: 24px;
+          cursor: pointer;
+        }
+
+        .cart-item {
+          display: flex;
+          margin-bottom: 16px;
+
+          img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+          }
+
+          .item-info {
+            display: flex;
+            flex-direction: column;
+
+            .item-name {
+              flex: 1;
+            }
+
+            .item-quantity {
+              justify-content: center;
+              flex: 1;
+              display: flex;
+
+              .minus-action {
+                font-size: 20px;
+                margin-top: 8px;
+                margin-right: 12px;
+              }
+
+              .plus-action {
+                font-size: 20px;
+                margin-top: 8px;
+                margin-left: 12px;
+              }
+
+              input {
+                text-align: center;
+                width: 56px;
+              }
+            }
+          }
         }
       }
 
       &__logo {
         cursor: pointer;
+
+        svg {
+          font-size: 24px;
+
+          path {
+            fill: #FFFFFF;
+          }
+        }
       }
     }
   }
