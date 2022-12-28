@@ -1,7 +1,6 @@
 <template>
   <div>
     <Header @inputSearch="handleSearch"
-            :cartList="this.cart"
             @showCart="handleCartAction"
     />
     <div class="home-page" @scroll="handleScrollPage($event)">
@@ -27,12 +26,12 @@
           </a>
           <a :href="item.link" class="product__name">{{ item.name }}</a>
           <div class="product__price">
-            <div class="product__price--old"> {{ item.oldPrice }}</div>
-            <div class="product__price--new">{{ item.price }}</div>
+            <div class="product__price--old"> ${{ item.oldPrice }}</div>
+            <div class="product__price--new">${{ item.price }}</div>
           </div>
           <div class="product__action">
             <div class="add-favorite" @click="handleAddFavorite(item)">
-              <font-awesome-icon  v-if="item.isFavorite"  class="favorite" :icon="['fa-solid', 'heart']"/>
+              <font-awesome-icon v-if="item.isFavorite" class="favorite" :icon="['fa-solid', 'heart']"/>
               <font-awesome-icon v-else :icon="['fa-regular', 'heart']"/>
             </div>
             <div class="add-cart">
@@ -41,7 +40,7 @@
               </button>
             </div>
             <div class="quick-view">
-              <font-awesome-icon class="plus-action" :icon="['fa-regular', 'eye']"/>
+              <font-awesome-icon :icon="['fa-regular', 'eye']"/>
             </div>
           </div>
         </div>
@@ -53,20 +52,24 @@
            data-placement="top"
            title="Back to top"
       >
-        <font-awesome-icon class="plus-action" :icon="['fa-solid', 'angles-up']"/>
+        <font-awesome-icon :icon="['fa-solid', 'angles-up']"/>
+      </div>
+      <div class="new_product_btn">
+        <font-awesome-icon class="plus-action" :icon="['fa-solid', 'plus']" @click="handleCreateNewProduct()"/>
       </div>
     </div>
-
     <Footer/>
     <SnowFail/>
   </div>
 </template>
 
-<script>
+<script async>
 import Header from '/components/header'
 import Footer from '/components/footer'
 import SnowFail from '/components/snow-fail'
 import $ from 'jquery'
+import ProductList from "../../resource/product/ProductList";
+import _ from 'lodash'
 
 export default {
   components: {
@@ -126,72 +129,11 @@ export default {
                       <a href="#" class="btn btn-block btn-dark">Shop All Sale</a>`,
         },
       ],
-      productList: [
-        {
-          name: "Ultimate 3D Bluetooth Speaker",
-          imgSrc: require( '../../static/images/product/product-1/product-1.jpg' ),
-          oldPrice: "59.00",
-          price: "49.00",
-          link: "#",
-          enableAddToCart: false,
-          quantity: 0,
-          isFavorite: false,
-        },
-        {
-          name: "Ultimate 3D Bluetooth Speaker",
-          imgSrc: require( '../../static/images/product/product-1/product-2.jpg' ),
-          oldPrice: "19.00",
-          price: "9.00",
-          link: "#",
-          enableAddToCart: false,
-          quantity: 0,
-          isFavorite: false,
-        },
-        {
-          name: "Ultimate 3D Bluetooth Speaker",
-          imgSrc: require( '../../static/images/product/product-1/product-1.jpg' ),
-          oldPrice: "77.00",
-          price: "23.00",
-          link: "#",
-          enableAddToCart: false,
-          quantity: 0,
-          isFavorite: false,
-        },
-        {
-          name: "Ultimate 3D Bluetooth Speaker",
-          imgSrc: require( '../../static/images/product/product-1/product-2.jpg' ),
-          oldPrice: "98.00",
-          price: "89.00",
-          link: "#",
-          enableAddToCart: false,
-          quantity: 0,
-          isFavorite: false,
-        },
-        {
-          name: "Ultimate 3D Bluetooth Speaker",
-          imgSrc: require( '../../static/images/product/product-1/product-2.jpg' ),
-          oldPrice: "111.00",
-          price: "3.00",
-          link: "#",
-          enableAddToCart: false,
-          quantity: 0,
-          isFavorite: false,
-        },
-        {
-          name: "Ultimate 3D Bluetooth Speaker",
-          imgSrc: require( '../../static/images/product/product-1/product-2.jpg' ),
-          oldPrice: "20.00",
-          price: "49.00",
-          link: "#",
-          enableAddToCart: false,
-          quantity: 0,
-          isFavorite: false,
-        },
-      ],
+      productList: ProductList,
       searchValue: '',
       cart: [],
       enableCart: false,
-      disableBackToTop: true
+      disableBackToTop: true,
     }
   },
   methods: {
@@ -203,16 +145,22 @@ export default {
     },
     handleAddToCart( selectedItem ) {
       if (!selectedItem.enableAddToCart) {
-        selectedItem.enableAddToCart = true;
-        if (selectedItem.quantity === 0) {
-          selectedItem.quantity += 1;
-        }
-        selectedItem.totalPrice = parseFloat(selectedItem.price) * selectedItem.quantity;
-        this.cart.push( selectedItem )
+        this.addToCart( selectedItem );
       } else {
-        selectedItem.enableAddToCart = false;
-        this.cart.splice( this.cart.indexOf( selectedItem ), 1 );
+        this.removeFromCart( selectedItem );
       }
+    },
+    addToCart( item ) {
+      item.enableAddToCart = true;
+      if (item.quantity === 0) {
+        item.quantity += 1;
+      }
+      item.totalPrice = parseFloat( item.price ) * item.quantity;
+      this.$store.dispatch( 'products/addCartList', _.cloneDeep( item ) );
+    },
+    removeFromCart( item ) {
+      item.enableAddToCart = false;
+      this.$store.dispatch( 'products/deleteCartItem', item )
     },
     handleCartAction( value ) {
       this.enableCart = value;
@@ -220,8 +168,11 @@ export default {
     handleScrollPage( event ) {
       this.disableBackToTop = window.scrollY < 500;
     },
-    handleAddFavorite(item) {
+    handleAddFavorite( item ) {
       item.isFavorite = !item.isFavorite;
+    },
+    handleCreateNewProduct() {
+      this.$router.replace('product/new-product');
     },
   },
   name: "index",
@@ -336,11 +287,11 @@ export default {
         justify-content: center;
 
         &--old {
-          text-decoration: line-through;
+          margin-right: 3px;
           font-size: 20px;
           letter-spacing: 0.005em;
+          text-decoration: line-through;
           color: #999;
-          margin-right: 3px;
         }
 
         &--new {
@@ -360,14 +311,14 @@ export default {
     position: fixed;
     bottom: 10px;
     right: 24px;
-    cursor: pointer;
-    font-size: 30px;
     width: 64px;
     height: 64px;
     padding: 8px;
-    border-radius: 100px;
+    font-size: 30px;
     text-align: center;
     background-image: linear-gradient(to right, #2BC0E4 0%, #EAECC6 51%, #2BC0E4 100%);
+    border-radius: 100px;
+    cursor: pointer;
 
     &:hover {
       background-position: right center; /* change the direction of the change here */
@@ -378,6 +329,14 @@ export default {
     &.hidden {
       display: none;
     }
+  }
+
+  .new_product_btn {
+    position: fixed;
+    bottom: 10px;
+    left: 24px;
+    cursor: pointer;
+    font-size: 30px;
   }
 }
 

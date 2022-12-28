@@ -1,8 +1,9 @@
 <template>
   <div class="header-section" :class="{header_fixed: this.isFixedHeader}">
-    <a href="/home" class="header-section__logo">
-      <img src="../../static/images/header/logo.png" alt="logo"/>
-    </a>
+    <img src="../../static/images/header/logo.png"
+         class="header-section__logo"
+         alt="logo"
+         @click="handleBackToHome()"/>
     <div class="header-section__search">
       <div class="input-group">
         <input type="text" class="form-control search-input" aria-label="Text input with dropdown button"
@@ -40,29 +41,37 @@
           <font-awesome-icon :icon="['fa-solid', 'cart-shopping']"/>
         </div>
         <div class="cart__section" :class="{active: enableCart}">
-          <span class="close-btn" @click="handleCloseCart()">
+          <span class="close_btn" @click="handleCloseCart()">
             <font-awesome-icon class="minus-action" :icon="['fa-solid', 'xmark']"/>
           </span>
-          <div v-for="(item, index) in cartList" class="cart-item">
-            <img :src="item.imgSrc" alt=""/>
-            <div class="item-info">
-              <div class="item-name"> {{ item.name }}</div>
-              <div class="item-quantity">
-                <font-awesome-icon class="minus-action" :icon="['fa-regular', 'square-minus']"
-                                   @click="handleReduceItemQuantity(item)"/>
-                <input :value="item.quantity ? item.quantity : 0"
-                       class="form-control"
-                       type="text"
-                       data-toggle="tooltip"
-                       data-placement="top"
-                       :title="item.quantity"
-                       @input="handleInputQuantity(item, $event)"
-                />
-                <font-awesome-icon class="plus-action" :icon="['fa-regular', 'square-plus']"
-                                   @click="handleIncreaseItemQuantity(item)"/>
+          <span class="cart_title">Items in your cart</span>
+          <div v-if="searchCartList.length === 0" class="empty_cart">
+            <img class="empty_cart__img" src="../../static/images/product/empty-cart.png" alt=""/>
+            <span>Nothing in your cart</span>
+          </div>
+          <div v-else>
+            <div v-for="(item, index) in searchCartList" class="cart_item">
+              <img :src="item.imgSrc" alt=""/>
+              <div class="item_info">
+                <div class="item_name"> {{ item.name }}</div>
+                <div class="item_quantity">
+                  <font-awesome-icon class="minus-action" :icon="['fa-regular', 'square-minus']"
+                                     @click="handleReduceItemQuantity(item)"/>
+                  <input :value="item.quantity ? item.quantity : 0"
+                         class="form-control"
+                         type="text"
+                         data-toggle="tooltip"
+                         data-placement="top"
+                         :title="item.quantity"
+                         @input="handleInputQuantity(item, $event)"
+                  />
+                  <font-awesome-icon class="plus-action" :icon="['fa-regular', 'square-plus']"
+                                     @click="handleIncreaseItemQuantity(item)"/>
+                </div>
+                <div class="item-price"> Total: {{ item.totalPrice }}</div>
               </div>
-              <div class="item-price"> Total: {{ item.totalPrice }} </div>
             </div>
+            <button class="view_cart" @click="handleViewCart()">View shopping cart</button>
           </div>
         </div>
       </div>
@@ -73,12 +82,6 @@
 <script>
 
 export default {
-  props: {
-    cartList: {
-      style: Array,
-      default: () => []
-    },
-  },
   mounted() {
     window.addEventListener( 'scroll', ( event ) => {
       if (document.documentElement.scrollTop >= 50) {
@@ -88,37 +91,55 @@ export default {
       }
     } )
   },
+  computed: {
+    searchCartList() {
+      this.cartList = this.$store.getters[`products/all`] || [];
+      return this.cartList;
+    }
+  },
   methods: {
     handleShowCart() {
       this.enableCart = true;
-      this.$emit('showCart', this.enableCart)
+      this.$emit( 'showCart', this.enableCart )
     },
     handleCloseCart() {
       this.enableCart = false;
-      this.$emit('showCart', this.enableCart)
+      this.$emit( 'showCart', this.enableCart )
     },
     handleSearch() {
       this.$emit( 'inputSearch', this.searchValue )
     },
     handleReduceItemQuantity( item ) {
-      item.quantity = item.quantity > 0 ? --item.quantity : 0;
-      item.totalPrice = parseFloat(item.price) * item.quantity;
+      const newItem = _.cloneDeep(item);
+      newItem.quantity = newItem.quantity > 0 ? --newItem.quantity : 0;
+      newItem.totalPrice = parseFloat( newItem.price ) * newItem.quantity;
+      this.$store.dispatch('products/updateCartItem', newItem);
     },
     handleIncreaseItemQuantity( item ) {
-      item.quantity++;
-      item.totalPrice = parseFloat(item.price) * item.quantity;
+      const newItem = _.cloneDeep(item);
+      newItem.quantity++;
+      newItem.totalPrice = parseFloat( newItem.price ) * newItem.quantity;
+      this.$store.dispatch('products/updateCartItem', newItem);
     },
     handleInputQuantity( item, event ) {
-      item.quantity = event.target.value ? event.target.value : 0;
-      item.totalPrice = parseFloat(item.price) * item.quantity;
-      console.log( item.quantity )
-    }
+      const newItem = _.cloneDeep(item);
+      newItem.quantity = newItem.target.value ? newItem.target.value : 0;
+      newItem.totalPrice = parseFloat( newItem.price ) * newItem.quantity;
+      this.$store.dispatch('products/updateCartItem', newItem);
+    },
+    handleViewCart() {
+      this.$router.replace( "/cart" );
+    },
+    handleBackToHome() {
+      this.$router.replace( '/home' );
+    },
   },
   data() {
     return {
       searchValue: '',
       enableCart: false,
       isFixedHeader: false,
+      cartList: [],
     }
   },
   name: "index"
@@ -142,6 +163,7 @@ export default {
   &__logo {
     flex: 1;
     padding-left: 4px;
+    cursor: pointer;
 
     img {
       width: 154px;
@@ -249,7 +271,7 @@ export default {
         transition-timing-function: linear;
         opacity: 0;
         z-index: 4;
-        overflow: scroll;
+        overflow: auto;
 
         &.active {
           right: 0;
@@ -262,13 +284,18 @@ export default {
         }
 
 
-        .close-btn {
+        .close_btn {
           margin-left: 4px;
           font-size: 24px;
           cursor: pointer;
         }
 
-        .cart-item {
+        .cart_title {
+          margin-left: 16px;
+          font-size: 24px;
+        }
+
+        .cart_item {
           display: flex;
           margin-bottom: 16px;
 
@@ -278,15 +305,15 @@ export default {
             object-fit: contain;
           }
 
-          .item-info {
+          .item_info {
             display: flex;
             flex-direction: column;
 
-            .item-name {
+            .item_name {
               flex: 1;
             }
 
-            .item-quantity {
+            .item_quantity {
               justify-content: center;
               flex: 1;
               display: flex;
@@ -308,6 +335,46 @@ export default {
                 width: 56px;
               }
             }
+          }
+        }
+
+        .empty_cart {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          color: #999999;
+          font-size: 20px;
+
+          &__img {
+            width: 108px;
+            height: 98px;
+            margin-left: 96px;
+            object-fit: contain;
+          }
+
+          span {
+            text-align: center;
+          }
+        }
+
+        .view_cart {
+          display: block;
+          margin: 10px;
+          padding: 15px 48px;
+          border: none;
+          text-align: center;
+          text-transform: uppercase;
+          color: white;
+          background-image: linear-gradient(to right, #003973 0%, #f8f872 51%, #003973 100%);
+          transition: 0.7s;
+          background-size: 200% auto;
+          box-shadow: 0 0 4px #0eeeee;
+          border-radius: 10px;
+
+          &:hover {
+            background-position: right center; /* change the direction of the change here */
+            color: #fff;
+            text-decoration: none;
           }
         }
       }

@@ -49,6 +49,10 @@ export default {
     'bootstrap-vue/nuxt',
   ],
 
+  axios: {
+    // proxy: true
+  },
+
   extend(config, {isClient}) {
     const alias = config.resolve.alias = config.resolve.alias || {};
     alias['~image'] = path.join(this.options.rootDir, '/static/images');
