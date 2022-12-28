@@ -31,13 +31,32 @@ export default {
   buildModules: [
     // https://go.nuxtjs.dev/typescript
     '@nuxt/typescript-build',
+    // import module fontawesome
+    '@nuxtjs/fontawesome',
+    'vue-ssr-carousel/nuxt',
   ],
+  fontawesome: {
+    icons:{
+      solid:true,
+      brands:true,
+      regular: true,
+    }
+  },
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
     // https://go.nuxtjs.dev/bootstrap
     'bootstrap-vue/nuxt',
   ],
+
+  axios: {
+    // proxy: true
+  },
+
+  extend(config, {isClient}) {
+    const alias = config.resolve.alias = config.resolve.alias || {};
+    alias['~image'] = path.join(this.options.rootDir, '/static/images');
+  },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
